@@ -1,0 +1,14 @@
+Metadata-Version: 2.4
+Name: pq-swarm-c2
+Version: 0.1.0
+Summary: Post-Quantum Swarm C2 Reference Implementation
+Author: Галиев Артур
+Author-email: Tarzanchik.84@gmail.com
+Requires-Python: >=3.8
+Requires-Dist: pqcrypto
+Requires-Dist: networkx
+Dynamic: author
+Dynamic: author-email
+Dynamic: requires-dist
+Dynamic: requires-python
+Dynamic: summary
