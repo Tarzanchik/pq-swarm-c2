@@ -2,9 +2,12 @@
 Asynchronous simulation of swarm message passing.
 Each node runs as a task and listens to a message queue.
 """
-
+import json
+import os
 import asyncio
 from pq_swarm.node import Node
+from pq_swarm.logger import log_msg
+
 
 class AsyncNode(Node):
     def __init__(self, node_id: str):
@@ -14,14 +17,35 @@ class AsyncNode(Node):
     async def run(self):
         """Main async loop: process incoming messages."""
         while True:
-            msg = await self.inbox.get()
+            self.check_command_file()
+            try:
+                msg = await asyncio.wait_for(self.inbox.get(), timeout=1)
+                print(f"[{self.node_id}] received: {msg}")
+                self.inbox.task_done()
+            except asyncio.TimeoutError:
+                pass
             print(f"[{self.node_id}] received: {msg}")
             self.inbox.task_done()
 
     def send(self, message: str):
         """Broadcast message to all peers."""
         for peer in self.peers.values():
-            asyncio.create_task(peer.inbox.put(f"{self.node_id}: {message}"))
+            full_msg = f"{self.node_id} → {peer.node_id}: {message}"
+            asyncio.create_task(peer.inbox.put(full_msg))
+            log_msg(full_msg)
+
+    def check_command_file(self):
+        if not os.path.exists("swarm_api.json"):
+            return
+        with open("swarm_api.json", "r") as f:
+            data = json.load(f)
+        if data["target"] == self.node_id and data["last_command"]:
+            full_msg = f"[EXECUTE] {self.node_id}: {data['last_command']}"
+            print(full_msg)
+            log_msg(full_msg)
+            # очистить команду после исполнения
+            with open("swarm_api.json", "w") as f:
+                json.dump({"target": "", "last_command": ""}, f)
 
 async def main():
     # создаём 10 узлов
