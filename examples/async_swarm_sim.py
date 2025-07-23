@@ -2,12 +2,12 @@
 Asynchronous simulation of swarm message passing.
 Each node runs as a task and listens to a message queue.
 """
+
 import json
 import os
 import asyncio
 from pq_swarm.node import Node
-from pq_swarm.logger import log_msg
-
+from pq_swarm.logger import log_msg, log_feedback
 
 class AsyncNode(Node):
     def __init__(self, node_id: str):
@@ -24,8 +24,6 @@ class AsyncNode(Node):
                 self.inbox.task_done()
             except asyncio.TimeoutError:
                 pass
-            print(f"[{self.node_id}] received: {msg}")
-            self.inbox.task_done()
 
     def send(self, message: str):
         """Broadcast message to all peers."""
@@ -35,6 +33,7 @@ class AsyncNode(Node):
             log_msg(full_msg)
 
     def check_command_file(self):
+        """Check if there's a command in swarm_api.json addressed to this node."""
         if not os.path.exists("swarm_api.json"):
             return
         with open("swarm_api.json", "r") as f:
@@ -43,6 +42,8 @@ class AsyncNode(Node):
             full_msg = f"[EXECUTE] {self.node_id}: {data['last_command']}"
             print(full_msg)
             log_msg(full_msg)
+            log_feedback(f"{self.node_id} ACK: {data['last_command']}")
+
             # очистить команду после исполнения
             with open("swarm_api.json", "w") as f:
                 json.dump({"target": "", "last_command": ""}, f)
@@ -62,8 +63,8 @@ async def main():
     # отправляем сообщение от n0
     nodes[0].send("COMMAND: SWEEP LEFT")
 
-    # ждём обработки очередей
-    await asyncio.sleep(1)
+    # ждём обработки очередей и команды из JSON
+    await asyncio.sleep(10)
 
     # останавливаем симуляцию
     for t in tasks:

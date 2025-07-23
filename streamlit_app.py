@@ -54,3 +54,13 @@ if st.button("📤 Broadcast Command"):
 # Отображаем логи
 for log in reversed(st.session_state.logs[-20:]):
     st.write(log)
+
+st.subheader("✅ Feedback from Nodes")
+
+try:
+    with open("logs/swarm_feedback.log", "r", encoding="utf-8") as f:
+        feedback_lines = f.readlines()
+    for line in reversed(feedback_lines[-20:]):
+        st.success(line.strip())
+except FileNotFoundError:
+    st.info("No feedback yet.")
